@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom Realtime App</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- NETWORK STATUS BAR -->
+    <div id="networkStatus" class="network-status">
+      <div class="status-indicator">
+        <span class="status-dot online"></span>
+        <span class="status-text">Online</span>
+        <span class="ping-info">Ping: 0ms</span>
+      </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="main-container">
+      <!-- SIDEBAR - DANH SÁCH CHAT -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h1 class="app-title">💬 Classroom Chat</h1>
+          <button id="newChatBtn" class="btn-new-chat" title="Tạo chat mới">
+            <span class="icon">+</span>
+          </button>
+        </div>
+
+        <!-- DANH SÁCH CHAT -->
+        <div id="chatList" class="chat-list">
+          <div class="empty-state">
+            <p>Chưa có chat nào</p>
+            <p class="text-small">Bắt đầu cuộc trò chuyện mới</p>
+          </div>
+        </div>
+
+        <!-- USER INFO -->
+        <div class="sidebar-footer">
+          <div id="userInfo" class="user-info">
+            <div class="user-avatar">👤</div>
+            <div class="user-details">
+              <p class="user-name">Loading...</p>
+              <p class="user-status">Initializing...</p>
+            </div>
+          </div>
+          <button id="logoutBtn" class="btn-logout" title="Đăng xuất">
+            <span class="icon">🚪</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- CHAT AREA -->
+      <main class="chat-area">
+        <!-- CHAT HEADER -->
+        <div id="chatHeader" class="chat-header">
+          <div class="chat-header-left">
+            <h2 id="chatTitle" class="chat-title">Chọn chat để bắt đầu</h2>
+            <div id="viewingIndicator" class="viewing-indicator hidden">
+              <span class="viewing-badge">👁️ <span id="viewingCount">0</span> người đang xem</span>
+            </div>
+          </div>
+          <div class="chat-header-right">
+            <button id="profileBtn" class="btn-profile" title="Xem profile">
+              <span class="icon">👤</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- MESSAGES CONTAINER -->
+        <div id="messagesContainer" class="messages-container">
+          <div class="empty-state">
+            <p>👋 Chào mừng đến với Classroom Chat</p>
+            <p class="text-small">Chọn một chat hoặc tạo chat mới để bắt đầu</p>
+          </div>
+        </div>
+
+        <!-- TYPING INDICATOR -->
+        <div id="typingIndicator" class="typing-indicator hidden">
+          <span class="typing-text">
+            <span id="typingUsers">Nguyễn Văn A</span> đang nhập
+          </span>
+          <span class="typing-dots">
+            <span></span><span></span><span></span>
+          </span>
+        </div>
+
+        <!-- MESSAGE INPUT -->
+        <div class="message-input-area">
+          <form id="messageForm" class="message-form">
+            <input
+              type="text"
+              id="messageInput"
+              class="message-input"
+              placeholder="Nhập tin nhắn..."
+              autocomplete="off"
+            >
+            <button type="submit" class="btn-send" title="Gửi tin nhắn">
+              <span class="icon">📤</span>
+            </button>
+          </form>
+        </div>
+      </main>
+
+      <!-- PROFILE PANEL -->
+      <aside id="profilePanel" class="profile-panel hidden">
+        <div class="profile-header">
+          <button id="closeProfileBtn" class="btn-close">
+            <span class="icon">✕</span>
+          </button>
+          <h3>Profile</h3>
+        </div>
+
+        <div class="profile-content">
+          <div class="profile-avatar-large">👤</div>
+          <div id="profileInfo" class="profile-info">
+            <p class="profile-name">Loading...</p>
+            <p class="profile-email">Loading...</p>
+            <p class="profile-status">Loading...</p>
+          </div>
+
+          <div id="viewersInfo" class="viewers-info hidden">
+            <h4>Người đang xem profile</h4>
+            <div id="viewersList" class="viewers-list">
+              <p class="text-small">Không ai đang xem</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- MODAL - TẠO CHAT MỚI -->
+  <div id="newChatModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Tạo Chat Mới</h3>
+        <button class="btn-close" onclick="closeNewChatModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <label for="chatName">Tên Chat:</label>
+        <input type="text" id="chatName" placeholder="Nhập tên chat..." class="input-field">
+
+        <label for="participantsList">Thêm Người Tham Gia:</label>
+        <div id="participantsList" class="participants-list">
+          <p class="text-small">Chưa có người tham gia</p>
+        </div>
+
+        <input type="text" id="participantInput" placeholder="Nhập UID người dùng..." class="input-field">
+        <button type="button" class="btn-secondary" onclick="addParticipant()">Thêm Người</button>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="closeNewChatModal()">Hủy</button>
+        <button type="button" class="btn-primary" onclick="createNewChat()">Tạo Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
